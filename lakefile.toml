@@ -1,0 +1,21 @@
+name = "halcheck-proofs"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["Proofs"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+linter.flexible = true
+linter.indexVariables = true
+linter.listVariables = true
+linter.hashCommand = true
+linter.missingDocs = true
+linter.oldObtain = true
+linter.omit = true
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+
+[[lean_lib]]
+name = "Proofs"
