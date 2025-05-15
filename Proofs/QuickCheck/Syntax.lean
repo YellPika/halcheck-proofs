@@ -110,11 +110,11 @@ def QTerm.map (ρ : ℕ → ℕ) : QTerm k → QTerm k := fun
   | ff => ff
   | if_ t₁ t₂ t₃ => if_ (map ρ t₁) (map ρ t₂) (map ρ t₃)
   | return_ t => return_ (map ρ t)
-  | let_ t₁ t₂ => let_ (map ρ t₁) (map (Nat.cases 0 (1 + ρ)) t₂)
+  | let_ t₁ t₂ => let_ (map ρ t₁) (map (Nat.cases 0 (ρ + 1)) t₂)
   | choose p => choose p
-  | lam τ t => lam τ (map (Nat.cases 0 (1 + ρ)) t)
+  | lam τ t => lam τ (map (Nat.cases 0 (ρ + 1)) t)
   | app t₁ t₂ => app (map ρ t₁) (map ρ t₂)
-  | fix τ t => fix τ (map (Nat.cases 0 (1 + ρ)) t)
+  | fix τ t => fix τ (map (Nat.cases 0 (ρ + 1)) t)
   | force t => force (map ρ t)
   | delay t => delay (map ρ t)
 
@@ -145,13 +145,13 @@ lemma QTerm.map_comp_map : map (k := k) f ∘ map g = map (f ∘ g) := by
 /-- **Substitution:** `bind σ t` subsitutes every free variable `x` in `t` with `σ x`. -/
 @[simp]
 def QTerm.bind (σ : ℕ → QTerm val) : QTerm k → QTerm k := fun
-  | var x        => σ x
-  | tt        => tt
-  | ff       => ff
-  | return_ t    => return_ (bind σ t)
-  | let_ t₁ t₂   => let_ (bind σ t₁) (bind (Nat.cases (var 0) (map (· + 1) ∘ σ)) t₂)
+  | var x => σ x
+  | tt => tt
+  | ff => ff
+  | return_ t => return_ (bind σ t)
+  | let_ t₁ t₂ => let_ (bind σ t₁) (bind (Nat.cases (var 0) (map (· + 1) ∘ σ)) t₂)
   | if_ t₁ t₂ t₃ => if_ (bind σ t₁) (bind σ t₂) (bind σ t₃)
-  | choose p    => choose p
+  | choose p => choose p
   | lam τ t => lam τ (bind (Nat.cases (var 0) (map (· + 1) ∘ σ)) t)
   | app t₁ t₂ => app (bind σ t₁) (bind σ t₂)
   | fix τ t => fix τ (bind (Nat.cases (var 0) (map (· + 1) ∘ σ)) t)
