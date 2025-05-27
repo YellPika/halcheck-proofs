@@ -1,4 +1,4 @@
 import Proofs.Nat
+import Proofs.OmegaCompletePartialOrder
 import Proofs.Rose
-import Proofs.QuickCheck.Syntax
-import Proofs.QuickCheck.Typing
+import Proofs.QuickCheck
