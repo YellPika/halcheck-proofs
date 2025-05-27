@@ -44,10 +44,16 @@ def genType : CType → VType := fun
   | gen τ => τ
   | _ => default
 
+@[simp]
+lemma genType_gen : genType (gen τ) = τ := rfl
+
 /-- `thunkType (thunk τ) = τ`. The result is undefined otherwise. -/
 def thunkType : VType → CType := fun
   | thunk τ => τ
   | _ => default
+
+@[simp]
+lemma thunkType_thunk : thunkType (thunk τ) = τ := rfl
 
 /--
 `Valid Γ t τ` (also written `Γ ⊢ t : τ`) means `t` has type `τ` in context `Γ`.
@@ -95,15 +101,15 @@ def Valid (Γ : Context) : QTerm k → QType k → Prop := fun
 notation Γ:80 " ⊢ " t:80 " : " τ:80 => Valid Γ t τ
 
 /-- A term cannot have more than one type. -/
-lemma Valid.unique (h : Valid Γ t τ) : τ = infer Γ t := by
+lemma Valid.unique (h : Γ ⊢ t : τ) : τ = infer Γ t := by
   sorry
 
 /-- Validity is preserved by renaming. -/
-lemma Valid.map (ht : Valid (Γ ∘ ρ) t τ) : Valid Γ (QTerm.map ρ t) τ := by
+lemma Valid.map (ht : (Γ ∘ ρ) ⊢ t : τ) : Γ ⊢ QTerm.map ρ t : τ := by
   sorry
 
 /-- Validity is preserved by substitution. -/
-lemma Valid.bind (hσ : ∀i, Valid Δ (σ i) (Γ i)) (ht : Valid Γ t τ) : Valid Δ (QTerm.bind σ t) τ := by
+lemma Valid.bind (hσ : ∀i, Δ ⊢ σ i : Γ i) (ht : Γ ⊢ t : τ) : Δ ⊢ QTerm.bind σ t : τ := by
   sorry
 
 end QuickCheck
