@@ -120,7 +120,57 @@ def QTerm.map (ρ : ℕ → ℕ) : QTerm k → QTerm k := fun
 
 /-- Renaming every variable to itself is the identity function. -/
 lemma QTerm.map_id' : map (fun x ↦ x) t = t := by
-  sorry
+  induction t with
+  | var x => rfl
+  | tt => rfl
+  | ff => rfl
+  | if_ t₁ t₂ t₃ ih₁ ih₂ ih₃ =>
+      rw [QTerm.map, ih₁, ih₂, ih₃]
+  | return_ t ih =>
+      rw [QTerm.map, ih]
+  | let_ t₁ t₂ ih₁ ih₂ =>
+      rw [QTerm.map, ih₁]
+      have : (Nat.cases 0 (1 + fun x ↦ x)) = (fun x => x) := by
+        funext x
+        rw [@Pi.add_def]
+        simp only [Pi.one_apply, Nat.cases_eta', id_eq]
+      simp only [let_.injEq, true_and]
+      rw [← ih₂]
+      congr 1
+      ring_nf
+      apply this
+
+  | choose p => rfl
+  | lam τ t ih =>
+      rw [QTerm.map]
+      have : (Nat.cases 0 (1 + fun x ↦ x)) = (fun x => x) := by
+        funext x
+        cases x with
+        | zero => rfl
+        | succ n => exact (Nat.add_comm n 1).symm
+      simp only [lam.injEq, true_and]
+      rw [← ih]
+      congr 1
+      ring_nf
+      apply this
+  | app t₁ t₂ ih₁ ih₂ =>
+      rw [QTerm.map, ih₁, ih₂]
+  | fix τ t ih =>
+      rw [QTerm.map]
+      have : (Nat.cases 0 (1 + fun x ↦ x)) = (fun x => x) := by
+        funext x
+        cases x with
+        | zero => rfl
+        | succ n => exact Nat.add_comm 1 n
+      simp only [fix.injEq, true_and]
+      rw [← ih]
+      congr 1
+      ring_nf
+      apply this
+  | force t ih =>
+      rw [QTerm.map, ih]
+  | delay t ih =>
+      rw [QTerm.map, ih]
 
 lemma QTerm.map_id : map id t = t := map_id'
 
@@ -135,7 +185,52 @@ lemma QTerm.map_id_fun : map (k := k) id = id := map_id_fun'
 /-- Composition distributes over renaming. -/
 @[simp]
 lemma QTerm.map_map : map f (map g t) = map (f ∘ g) t := by
-  sorry
+  induction t generalizing f g with
+  | var x =>
+      rfl
+  | tt =>
+      rfl
+  | ff =>
+      rfl
+  | if_ t₁ t₂ t₃ ih₁ ih₂ ih₃ => simp [QTerm.map, ih₁, ih₂, ih₃]
+  | return_ t ih => simp [QTerm.map, ih]
+  | let_ t₁ t₂ ih₁ ih₂ =>
+      simp only [QTerm.map]
+      rw [ih₁, ih₂]
+      congr 2
+      funext x
+      dsimp only [Function.comp_apply]
+      cases x with
+      | zero => rfl
+      | succ n =>
+        simp only [Nat.cases_succ]
+        simp only [Pi.add_apply, Pi.one_apply, Function.comp_apply]
+        simp only [Nat.cases_succ, Pi.add_apply, Pi.one_apply, Nat.add_left_inj]
+  | choose p =>
+      rfl
+  | lam τ t ih =>
+    simp only [map, lam.injEq, true_and, ih]
+    congr 1
+    funext x
+    dsimp only [Function.comp_apply]
+    cases x with
+    | zero => rfl
+    | succ n =>
+      simp only [Nat.cases_succ, Pi.add_apply, Pi.one_apply, Function.comp_apply, Nat.add_left_inj]
+  | app t₁ t₂ ih₁ ih₂ =>
+    simp [QTerm.map, ih₁, ih₂]
+  | fix τ t ih =>
+    simp only [map, fix.injEq, true_and, ih]
+    congr 1
+    funext x
+    dsimp only [Function.comp_apply]
+    cases x with
+    | zero => rfl
+    | succ n =>
+      simp only [Nat.cases_succ, Pi.add_apply, Pi.one_apply, Function.comp_apply, Nat.add_left_inj]
+
+  | force _ ih => simp only [map, force.injEq, ih]
+  | delay _ ih => simp only [map, delay.injEq, ih]
 
 @[simp]
 lemma QTerm.map_comp_map : map (k := k) f ∘ map g = map (f ∘ g) := by
@@ -160,7 +255,57 @@ def QTerm.bind (σ : ℕ → QTerm val) : QTerm k → QTerm k := fun
 
 /-- Substituting every variable with itself is the identity function. -/
 lemma QTerm.bind_var : bind var t = t := by
-  sorry
+  induction t with
+  | var x =>
+    rfl
+  | tt =>
+    rfl
+  | ff =>
+    rfl
+  | if_ t₁ t₂ t₃ ih₁ ih₂ ih₃ =>
+    simp [QTerm.bind, ih₁, ih₂, ih₃]
+  | return_ t ih =>
+    simp [QTerm.bind, ih]
+  | let_ t₁ t₂ ih₁ ih₂ =>
+    simp only [QTerm.bind]
+    rw [ih₁]
+    rw [← ih₁]
+    rw [← ih₂]
+    simp only [let_.injEq, true_and]
+    congr 1
+    funext x
+    cases x with
+    | zero => rfl
+    | succ n =>
+      simp only [Nat.cases_succ, Function.comp_apply, map, var.injEq]
+  | choose p =>
+    rfl
+  | lam τ t ih =>
+    simp only [QTerm.bind]
+    congr 1
+    have h : (Nat.cases (var 0) ((map fun x ↦ x + 1) ∘ var)) = var := by
+      funext x
+      cases x with
+      | zero => rfl
+      | succ n =>
+        simp only [Nat.cases_succ, Function.comp_apply, map, var.injEq]
+    rw [h, ih]
+  | app t₁ t₂ ih₁ ih₂ =>
+    simp [QTerm.bind, ih₁, ih₂]
+  | fix τ t ih =>
+    simp only [QTerm.bind]
+    congr 1
+    have h : (Nat.cases (var 0) ((map fun x ↦ x + 1) ∘ var)) = var := by
+      funext x
+      cases x with
+      | zero => rfl
+      | succ n =>
+        simp only [Nat.cases_succ, Function.comp_apply, map, var.injEq]
+    rw [h, ih]
+  | force t ih =>
+    simp [QTerm.bind, ih]
+  | delay t ih =>
+    simp [QTerm.bind, ih]
 
 @[simp]
 lemma QTerm.bind_var_fun' : bind (k := k) var = id := by
@@ -173,7 +318,47 @@ Necessary to prove `bind_bind`.
 -/
 @[simp]
 lemma QTerm.bind_map : bind f (map g t) = bind (f ∘ g) t := by
-  sorry
+  induction t generalizing f g with
+  | var x => rfl
+  | tt => rfl
+  | ff => rfl
+  | if_ t₁ t₂ t₃ ih₁ ih₂ ih₃ => simp [QTerm.bind, QTerm.map, ih₁, ih₂, ih₃]
+  | return_ t ih => simp [QTerm.bind, QTerm.map, ih]
+  | let_ t₁ t₂ ih₁ ih₂ =>
+    simp only [QTerm.bind, QTerm.map]
+    rw [ih₁, ih₂]
+    congr
+    funext x
+    cases x with
+    | zero => rfl
+    | succ n =>
+      simp only [Function.comp_apply, Nat.cases_succ, Pi.add_apply, Pi.one_apply]
+  | choose p => rfl
+  | lam τ t ih =>
+    simp only [QTerm.bind, QTerm.map, lam.injEq, true_and]
+    rw [ih]
+    congr
+    funext x
+    cases x with
+    | zero => rfl
+    | succ n =>
+      simp only [Function.comp_apply, Nat.cases_succ, Pi.add_apply, Pi.one_apply]
+  | app t₁ t₂ ih₁ ih₂ => simp only [QTerm.bind, QTerm.map, ih₁, ih₂]
+  | fix τ t ih =>
+    simp only [QTerm.bind, QTerm.map, fix.injEq, true_and]
+    rw [ih]
+    congr
+    funext x
+    cases x with
+    | zero => rfl
+    | succ n =>
+      simp only [Function.comp_apply, Nat.cases_succ, Pi.add_apply, Pi.one_apply]
+  | force t ih =>
+    simp only [QTerm.bind, QTerm.map]
+    rw [ih]
+  | delay t ih =>
+    simp only [QTerm.bind, QTerm.map]
+    rw [ih]
 
 @[simp]
 lemma QTerm.bind_comp_map : bind (k := k) f ∘ map g = bind (f ∘ g) := by
@@ -186,7 +371,44 @@ Necessary to prove `bind_bind`.
 -/
 @[simp]
 lemma QTerm.map_bind : map f (bind g t) = bind (map f ∘ g) t := by
-  sorry
+  induction t generalizing f g with
+  | var x => rfl
+  | tt => rfl
+  | ff => rfl
+  | if_ t₁ t₂ t₃ ih₁ ih₂ ih₃ => simp [QTerm.bind, QTerm.map, ih₁, ih₂, ih₃]
+  | return_ t ih => simp [QTerm.bind, QTerm.map, ih]
+  | let_ t₁ t₂ ih₁ ih₂ =>
+    simp only [QTerm.bind, QTerm.map]
+    rw [ih₁, ih₂]
+    congr
+    funext x
+    cases x with
+    | zero => rfl
+    | succ n =>
+      simp only [Function.comp_apply, Nat.cases_succ, map_map]
+      congr 1
+  | choose p => rfl
+  | lam τ t ih =>
+    simp only [QTerm.bind, QTerm.map, ih]
+    congr
+    funext x
+    cases x with
+    | zero => rfl
+    | succ n =>
+      simp only [Function.comp_apply, Nat.cases_succ, map_map]
+      congr 1
+  | app t₁ t₂ ih₁ ih₂ => simp [QTerm.bind, QTerm.map, ih₁, ih₂]
+  | fix τ t ih =>
+    simp only [QTerm.bind, QTerm.map, ih]
+    congr
+    funext x
+    cases x with
+    | zero => rfl
+    | succ n =>
+      simp only [Function.comp_apply, Nat.cases_succ, map_map]
+      congr 1
+  | force t ih => simp [QTerm.bind, QTerm.map, ih]
+  | delay t ih => simp [QTerm.bind, QTerm.map, ih]
 
 @[simp]
 lemma QTerm.map_comp_bind : map (k := k) f ∘ bind g = bind (map f ∘ g) := by
@@ -196,7 +418,50 @@ lemma QTerm.map_comp_bind : map (k := k) f ∘ bind g = bind (map f ∘ g) := by
 /-- Composition distributes over substitution. -/
 @[simp]
 lemma QTerm.bind_bind : bind f (bind g t) = bind (bind f ∘ g) t := by
-  sorry
+  induction t generalizing f g with
+  | var x => simp [bind, Function.comp_apply]
+  | tt => simp [bind]
+  | ff => simp [bind]
+  | if_ t₁ t₂ t₃ ih₁ ih₂ ih₃ => simp [bind, ih₁, ih₂, ih₃]
+  | return_ t ih => simp [bind, ih]
+  | let_ t₁ t₂ ih₁ ih₂ =>
+    simp only [bind, let_.injEq]
+    rw [ih₁, ih₂]
+    simp only [Nat.comp_cases, bind, Nat.cases_zero, true_and]
+    congr 1
+    funext x
+    cases x with
+    | zero => simp [Nat.cases_zero, Function.comp_apply, bind]
+    | succ n =>
+      simp only [Nat.cases_succ, Function.comp_apply]
+      rw [QTerm.map_bind, QTerm.bind_map]
+      congr 1
+  | choose p => simp [bind]
+  | lam τ t ih =>
+    simp only [bind]
+    rw [ih]
+    congr
+    funext x
+    cases x with
+    | zero => simp [Nat.cases_zero, Function.comp_apply, bind]
+    | succ n =>
+      simp only [Nat.cases_succ, Function.comp_apply]
+      rw [QTerm.map_bind, QTerm.bind_map]
+      congr 1
+  | app t₁ t₂ ih₁ ih₂ => simp [bind, ih₁, ih₂]
+  | fix τ t ih =>
+    simp only [bind, fix.injEq, true_and]
+    rw [ih]
+    congr 1
+    funext x
+    cases x with
+    | zero => simp [Nat.cases_zero, Function.comp_apply, bind]
+    | succ n =>
+      simp only [Nat.cases_succ, Function.comp_apply]
+      rw [QTerm.map_bind, QTerm.bind_map]
+      congr 1
+  | force t ih => simp [bind, ih]
+  | delay t ih => simp [bind, ih]
 
 @[simp]
 lemma QTerm.bind_comp : bind (k := k) f ∘ bind g = bind (bind f ∘ g) := by
@@ -220,9 +485,178 @@ def QTerm.free : QTerm k → Set ℕ := fun
   | delay t => free t
 
 lemma QTerm.map_congr (h : ∀x ∈ free t, f x = g x) : map f t = map g t := by
-  sorry
+  induction t generalizing f g with
+  | var x =>
+    simp only [map, var.injEq]
+    exact h x (Set.mem_singleton x)
+  | tt =>
+    simp [QTerm.map]
+  | ff =>
+    simp [QTerm.map]
+  | if_ t₁ t₂ t₃ ih₁ ih₂ ih₃ =>
+    simp only [QTerm.map, QTerm.free, Set.union_def, Set.mem_setOf_eq] at h ⊢
+    congr 1
+    apply ih₁
+    intro x hx
+    rw [h x (Or.inl (Or.inl hx))]
+    apply ih₂
+    intro y hy
+    rw [h y (Or.inl (Or.inr hy))]
+    apply ih₃
+    intro z hz
+    rw [h z (Or.inr hz)]
+  | return_ t ih =>
+    simp only [QTerm.map, QTerm.free] at h ⊢
+    congr 1
+    apply ih
+    intro x hx
+    rw [h x hx]
+  | let_ t₁ t₂ ih₁ ih₂ =>
+    simp only [QTerm.map, QTerm.free, Set.union_def, Set.mem_setOf_eq] at h ⊢
+    congr 1
+    · apply ih₁
+      intro x hx
+      exact h x (Or.inl hx)
+    · apply ih₂
+      intro y hy
+      cases y with
+      | zero => simp [Nat.cases_zero]
+      | succ n =>
+        simp only [Nat.cases_succ, Pi.add_apply, Pi.one_apply, Nat.add_left_inj]
+        rw [Mathlib.Tactic.Zify.natCast_eq, h n (Or.inr hy)]
+  | choose p =>
+    simp [QTerm.map]
+  | lam τ t ih =>
+    simp only [QTerm.map, QTerm.free, Set.mem_setOf_eq] at h ⊢
+    congr 1
+    apply ih
+    intro y hy
+    cases y with
+    | zero => simp [Nat.cases_zero]
+    | succ n =>
+      simp only [Nat.cases_succ]
+      rw [@Pi.add_apply]
+      simp only [Pi.one_apply, Pi.add_apply, Nat.add_right_inj]
+      rw [h n hy]
+  | app t₁ t₂ ih₁ ih₂ =>
+    simp only [QTerm.map, QTerm.free, Set.union_def, Set.mem_setOf_eq] at h ⊢
+    congr 1
+    · apply ih₁
+      intro x hx
+      exact h x (Or.inl hx)
+    · apply ih₂
+      intro x hx
+      exact h x (Or.inr hx)
+  | fix τ t ih =>
+    simp only [QTerm.map, QTerm.free, Set.mem_setOf_eq] at h ⊢
+    congr 1
+    apply ih
+    intro y hy
+    cases y with
+    | zero => simp [Nat.cases_zero]
+    | succ n =>
+      simp only [Nat.cases_succ]
+      rw [@Pi.add_apply]
+      simp only [Pi.one_apply, Pi.add_apply, Nat.add_right_inj]
+      rw [h n hy]
+  | force t ih =>
+    simp only [QTerm.map, QTerm.free] at h ⊢
+    congr 1
+    apply ih
+    intro x hx
+    rw [h x hx]
+  | delay t ih =>
+    simp only [QTerm.map, QTerm.free] at h ⊢
+    congr 1
+    apply ih
+    intro x hx
+    rw [h x hx]
 
 lemma QTerm.bind_congr (h : ∀x ∈ free t, f x = g x) : bind f t = bind g t := by
-  sorry
+  induction t generalizing f g with
+  | var x =>
+    simp only [bind, free, Set.mem_singleton_iff] at h ⊢
+    exact h x rfl
+  | tt =>
+    simp [bind]
+  | ff =>
+    simp [bind]
+  | if_ t₁ t₂ t₃ ih₁ ih₂ ih₃ =>
+    simp only [bind, free, Set.union_def, Set.mem_setOf_eq] at h ⊢
+    congr 1
+    · apply ih₁
+      intro x hx
+      exact h x (Or.inl (Or.inl hx))
+    · apply ih₂
+      intro x hx
+      exact h x (Or.inl (Or.inr hx))
+    · apply ih₃
+      intro x hx
+      exact h x (Or.inr hx)
+  | return_ t ih =>
+    simp only [bind, free] at h ⊢
+    congr 1
+    apply ih
+    intro x hx
+    exact h x hx
+  | let_ t₁ t₂ ih₁ ih₂ =>
+    simp only [bind, free, Set.union_def, Set.mem_setOf_eq] at h ⊢
+    congr 1
+    · apply ih₁
+      intro x hx
+      exact h x (Or.inl hx)
+    · apply ih₂
+      intro y hy
+      cases y with
+      | zero => simp [Nat.cases_zero]
+      | succ n =>
+        simp only [Nat.cases_succ, Function.comp_apply]
+        congr 1
+        exact h n (Or.inr hy)
+  | choose p =>
+    simp [bind]
+  | lam τ t ih =>
+    simp only [bind, free, Set.mem_setOf_eq] at h ⊢
+    congr 1
+    apply ih
+    intro y hy
+    cases y with
+    | zero => simp [Nat.cases_zero]
+    | succ n =>
+      simp only [Nat.cases_succ, Function.comp_apply]
+      congr 1
+      exact h n hy
+  | app t₁ t₂ ih₁ ih₂ =>
+    simp only [bind, free, Set.union_def, Set.mem_setOf_eq] at h ⊢
+    congr 1
+    · apply ih₁
+      intro x hx
+      exact h x (Or.inl hx)
+    · apply ih₂
+      intro x hx
+      exact h x (Or.inr hx)
+  | fix τ t ih =>
+    simp only [bind, free, Set.mem_setOf_eq] at h ⊢
+    congr 1
+    apply ih
+    intro y hy
+    cases y with
+    | zero => simp [Nat.cases_zero]
+    | succ n =>
+      simp only [Nat.cases_succ, Function.comp_apply]
+      congr 1
+      exact h n hy
+  | force t ih =>
+    simp only [bind, free] at h ⊢
+    congr 1
+    apply ih
+    intro x hx
+    exact h x hx
+  | delay t ih =>
+    simp only [bind, free] at h ⊢
+    congr 1
+    apply ih
+    intro x hx
+    exact h x hx
 
 end QuickCheck
